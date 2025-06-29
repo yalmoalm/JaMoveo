@@ -1,62 +1,97 @@
-# 🎵 JaMoveo – Band Rehearsal Web App
+# 🎶 JaMoveo – Live Rehearsal System
 
-JaMoveo is a real-time rehearsal management web app for musical bands.  
-It allows musicians to join a live session from their phones and view lyrics/chords as controlled by an admin user.
+**JaMoveo** is a rehearsal collaboration platform built for real-time display of song lyrics and chords between an admin and players via WebSockets.
 
 ---
 
-## 🌐 Live Demo
+## 🌐 Live Deployment
 
-- **Frontend (Netlify):** [https://your-netlify-url.netlify.app](https://your-netlify-url.netlify.app)
-- **Backend (Render):** [https://jamoveo-server.onrender.com/api/health](https://jamoveo-server.onrender.com/api/health)
+- 🎛️ Admin Panel: (https://bucolic-melba-10ceb5.netlify.app/admin.html)  
+- 🎼 Player View: (https://bucolic-melba-10ceb5.netlify.app/)
+
+> The backend is hosted on Render and serves Socket.IO communication and song content APIs.
+
+---
+
+## 🧪 Try It Out
+
+To test the system:
+
+1. Open the **Admin Panel** link.
+2. Use the search box to search for:
+   - `hey_jude`
+   - `veech_shelo`
+3. Press **Select** to broadcast the song to all connected players.
+4. Open the **Player View** link in another tab to see the live display update.
 
 ---
 
 ## ⚙️ Tech Stack
 
-- **Frontend:** HTML, CSS, Vanilla JS (no framework)
+- **Frontend:** HTML5, CSS3, Vanilla JS
 - **Backend:** Node.js, Express, Socket.IO
-- **Database:** SQLite (via Sequelize ORM)
-- **Deployment:** Netlify + Render
+- **Database:** SQLite via Sequelize ORM
+- **Deployment:** Netlify (frontend), Render (backend)
 
 ---
 
-## 🧪 Features
+## 📁 Project Structure
 
-- 🔍 **Admin panel**: search & select songs
-- 🎵 **Live lyrics/chords display** for users
-  - Players see **lyrics + chords**
-  - Singers see **lyrics only**
-- 🔄 **Real-time updates** via Socket.IO
-- 🛑 **Quit session** button (admin only) returns everyone to waiting screen
-- 🗃️ **Upload songs** via JSON
+```
+📦 root/
+├── public/
+│   ├── index.html           # Player view
+│   ├── admin.html           # Admin control panel
+│   ├── socket.html          # Socket debug UI
+│   ├── css/
+│   │   └── templet.css      # Styling
+│   └── images/
+│       └── moveo-logo.png   # Logo assets
+│
+├── db/
+│   ├── jamoveo.db           # SQLite database file
+│   ├── sequelize.js         # Sequelize config
+│   └── initModels.js        # Initializes model associations
+│
+├── models/
+│   ├── User.js
+│   ├── Song.js
+│   ├── SongLine.js
+│   ├── Session.js
+│   └── Role.js
+│
+├── repositories/
+│   ├── authRepository.js
+│   ├── roleRepository.js
+│   ├── sessionRepository.js
+│   ├── songRepository.js
+│   └── userRepository.js
+│
+├── controllers/
+│   ├── authController.js
+│   ├── sessionController.js
+│   ├── songController.js
+│   └── userController.js
+│
+├── middleware/
+│   └── requireRole.js       # Role-based access control
+│
+├── socketServer.js          # Handles all Socket.IO logic
+├── app.js                   # Express app instance
+├── server.js                # Starts HTTP server
+├── package.json             # Node.js dependencies and scripts
+└── README.md                # Project overview
+```
 
 ---
 
-## 📂 Project Structure
+## 🔌 Socket Namespace
 
+All socket communication is done via the namespace:  
 ```
-/
-├── client/            # HTML/CSS/JS frontend
-├── controllers/       # Express route controllers
-├── db/                # SQLite DB and Sequelize config
-├── models_objects/    # Sequelize models
-├── repositories/      # DB access layer
-├── routes/            # Express routes
-├── sockets/           # Socket.IO namespace logic
-├── app.js             # Express app setup
-├── server.js          # Main entrypoint
-└── README.md
+https://jamoveo-server-rs50.onrender.com/sessions
 ```
 
 ---
 
-## 📦 Install & Run Locally
-
-```bash
-git clone https://github.com/yalmoalm/JaMoveo.git
-cd JaMoveo
-npm install
-node server.js
-```
-
+© 2025 – JaMoveo · Moveo Coding Task – Web Development
