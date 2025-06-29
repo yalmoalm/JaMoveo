@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- External styles and assets -->
+  <link rel="stylesheet" href="css/templet.css" />
+  <link rel="icon" type="image/png" href="images/moveo-logo_icon_32x32.png" />
+  <script src="/socket.io/socket.io.js"></script>
+
+  <title>Admin | JaMoveo</title>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Top brand section -->
+    <div class="top-brand">
+      <h1 class="brand-name">JAMOVEO</h1>
+      <div class="divider-line"></div>
+      <img src="images/moveo-logo.png" alt="JAMOVEO Logo" class="logo-img" />
+    </div>
+
+    <!-- Admin control panel -->
+    <div class="admin-panel" style="margin-top: 100px; text-align: center; color: var(--text-color);">
+      
+      <!-- Song search input -->
+      <h2>Search a song by name</h2>
+      <input id="searchInput" type="text" placeholder="Enter song name" style="padding: 10px; width: 300px;" />
+      <button id="searchBtn" style="padding: 10px 20px; margin-left: 10px;">Search</button>
+
+      <!-- Search result section -->
+      <div id="results" style="margin-top: 30px;"></div>
+
+      <!-- End session button -->
+      <button id="quitBtn" style="margin-top: 40px; padding: 10px 20px; background-color: var(--primary-color); color: white; border: none; cursor: pointer;">
+        Quit Session
+      </button>
+
+      <!-- Live display area for selected song -->
+      <div id="liveDisplay" style="margin-top: 50px; font-size: 18px;"></div>
+    </div>
+  </div>
+
+  <script>
+    // Session and user constants
+    const sessionId = 1;
+    const ADMIN_USER = { id: 1, role: 'admin' };
+    const socket = io('/sessions');
+
+    // Global variable to hold selected song
+    let selectedSong = null;
+
+    // Connect to socket server and join session room
+    socket.on('connect', () => {
+      console.log('[Socket] Connected:', socket.id);
+      socket.emit('join-session', sessionId);
+    });
+
+    // Search button click handler
+    document.getElementById('searchBtn').onclick = async () => {
+      const query = document.getElementById('searchInput').value.trim();
+      const resultsDiv = document.getElementById('results');
+      if (!query) return;
+
+      try {
+        // Fetch song by name
+        const response = await fetch(`/api/songs/by-name/${encodeURIComponent(query)}`, {
+          headers: {
+            'x-user': JSON.stringify(ADMIN_USER)
+          }
+        });
+
+        if (!response.ok) throw new Error('Song not found');
+        const song = await response.json();
+        selectedSong = song;
+
+        // Display song info with select button
+        resultsDiv.innerHTML = `
+          <div style="margin-top: 20px;">
+            <strong>${song.name}</strong> (ID: ${song.id})
+            <br/>
+            <button id="selectBtn" style="margin-top: 8px;">Select</button>
+          </div>
+        `;
+
+        // Add click handler to select button
+        document.getElementById('selectBtn').onclick = () => {
+          if (selectedSong) {
+            sendSong(selectedSong);
+          }
+        };
+      } catch (err) {
+        // Display error message
+        resultsDiv.innerHTML = `<p style="color: var(--highlight-color); margin-top: 20px;">No matching song found.</p>`;
+        console.warn('[Search Error]', err.message);
+      }
+    };
+
+    // Emit selected song to other users in session
+    function sendSong(song) {
+      socket.emit('song-updated', { sessionId, song });
+      console.log('[Emit] song-updated:', song);
+    }
+
+    // Emit signal to end the current session
+    document.getElementById('quitBtn').onclick = () => {
+      socket.emit('end-session', sessionId);
+      console.log('[Emit] end-session:', sessionId);
+    };
+
+    // Handle receiving updated song from server
+    socket.on('song-updated', song => {
+      console.log('[Debug] Received song:', song);
+      const display = document.getElementById('liveDisplay');
+
+      // Group song lines by their line number
+      const linesGrouped = {};
+      song.lines.forEach(word => {
+        const lineNum = word.line_number || 0;
+        if (!linesGrouped[lineNum]) {
+          linesGrouped[lineNum] = [];
+        }
+        linesGrouped[lineNum].push(word);
+      });
+
+      // Format song lines with chords above lyrics
+      const formatted = Object.values(linesGrouped).map(words => {
+        return `
+          <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+            ${words.map(word => {
+              const lyrics = word.lyrics || '';
+              const chords = word.chords || '';
+              return `
+                <div style="text-align: center;">
+                  ${chords ? `<div style="color: var(--highlight-color); font-size: 12px; font-weight: bold;">${chords}</div>` : `<div style="height: 16px;"></div>`}
+                  <div>${lyrics}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }).join('');
+
+      // Update the live display area
+      display.innerHTML = `
+        <h3 style="margin-bottom: 20px;">${song.name} – Live</h3>
+        <div style="display: inline-block;">${formatted}</div>
+      `;
+    });
+  </script>
+</body>
+</html>
