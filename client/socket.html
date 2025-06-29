@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Socket.IO Test – JaMoveo</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    #log {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f5f5f5;
+      height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>Socket.IO Test – JaMoveo</h1>
+
+  <button id="joinBtn">Join Session</button>
+  <button id="sendSongBtn">Send Song</button>
+  <button id="endSessionBtn">End Session</button>
+
+  <div id="log">[Client] Script loaded</div>
+
+  <script>
+    const log = msg => {
+      const logBox = document.getElementById('log');
+      logBox.textContent += `\n${msg}`;
+      logBox.scrollTop = logBox.scrollHeight;
+      console.log(msg);  // Also print to browser console
+    };
+
+    let socket;
+
+    try {
+      socket = io('/sessions');
+
+      socket.on('connect', () => {
+        log(`[Socket] Connected: ${socket.id}`);
+      });
+
+      socket.on('connect_error', (err) => {
+        log(`[Socket] Connection error: ${err.message}`);
+      });
+
+      socket.on('disconnect', () => {
+        log(`[Socket] Disconnected`);
+      });
+
+      socket.on('song-updated', data => {
+        log(`[Socket] song-updated received: ${JSON.stringify(data)}`);
+      });
+
+      socket.on('force-logout', () => {
+        log(`[Socket] force-logout received`);
+      });
+
+    } catch (error) {
+      log(`[Client Error] Failed to initialize socket: ${error.message}`);
+    }
+
+    document.getElementById('joinBtn').onclick = () => {
+      const sessionId = 1;
+      if (!socket?.connected) {
+        log(`[Join] Socket not connected`);
+        return;
+      }
+      socket.emit('join-session', sessionId);
+      log(`[Emit] join-session: ${sessionId}`);
+    };
+
+    document.getElementById('sendSongBtn').onclick = () => {
+      if (!socket?.connected) {
+        log(`[Send Song] Socket not connected`);
+        return;
+      }
+      const dummySong = {
+        id: 99,
+        name: 'Test Song',
+        artist: 'Moveo Band',
+        content: [
+          [{ lyrics: 'Hello', chords: 'C' }, { lyrics: 'world', chords: 'G' }]
+        ]
+      };
+      socket.emit('song-updated', { sessionId: 1, song: dummySong });
+      log(`[Emit] song-updated: ${JSON.stringify(dummySong)}`);
+    };
+
+    document.getElementById('endSessionBtn').onclick = () => {
+      if (!socket?.connected) {
+        log(`[End Session] Socket not connected`);
+        return;
+      }
+      socket.emit('end-session', 1);
+      log(`[Emit] end-session: 1`);
+    };
+  </script>
+</body>
+</html>

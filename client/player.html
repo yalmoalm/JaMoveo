@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- BOXICONS -->
+  <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
+
+  <!-- FAVICON -->
+  <link rel="icon" type="image/png" href="images/moveo-logo_icon_32x32.png">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/templet.css" />
+
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <title>Player | JaMoveo</title>
+
+  <style>
+    /* Additional styling for player view */
+    .player-container {
+      margin-top: 100px;
+      width: 100%;
+      max-width: 900px;
+      padding: 20px;
+      text-align: center;
+      color: var(--text-color);
+    }
+
+    .song-title {
+      font-size: 1.8rem;
+      margin-bottom: 30px;
+      font-weight: bold;
+      color: var(--text-color);
+    }
+
+    .song-line {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .word-block {
+      text-align: center;
+      min-width: 50px;
+    }
+
+    .chord {
+      color: var(--highlight-color);
+      font-size: 12px;
+      font-weight: bold;
+      height: 16px;
+    }
+
+    .lyrics {
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <!-- Logo + Brand -->
+    <div class="top-brand">
+      <h1 class="brand-name">JAMOVEO</h1>
+      <div class="divider-line"></div>
+      <img src="images/moveo-logo.png" alt="JAMOVEO Logo" class="logo-img">
+    </div>
+
+    <!-- Player Display -->
+    <div class="player-container" id="playerArea">
+      <div class="song-title">ממתין לשיר...</div>
+      <div id="liveDisplay"></div>
+    </div>
+  </div>
+
+  <script>
+    const sessionId = 1;
+    const socket = io('/sessions');
+
+    socket.on('connect', () => {
+      console.log('[Socket] Connected:', socket.id);
+      socket.emit('join-session', sessionId);
+    });
+
+    socket.on('song-updated', song => {
+      console.log('[Debug] Received song:', song);
+
+      const titleEl = document.querySelector('.song-title');
+      const display = document.getElementById('liveDisplay');
+
+      // Group lines
+      const linesGrouped = {};
+      song.lines.forEach(word => {
+        const lineNum = word.line_number || 0;
+        if (!linesGrouped[lineNum]) linesGrouped[lineNum] = [];
+        linesGrouped[lineNum].push(word);
+      });
+
+      // Render each line
+      const formatted = Object.values(linesGrouped).map(words => {
+        return `
+          <div class="song-line">
+            ${words.map(word => {
+              const lyrics = word.lyrics || '';
+              const chords = word.chords || '';
+              return `
+                <div class="word-block">
+                  ${chords ? `<div class="chord">${chords}</div>` : `<div style="height: 16px;"></div>`}
+                  <div class="lyrics">${lyrics}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }).join('');
+
+      titleEl.innerHTML = song.name;
+      display.innerHTML = formatted;
+    });
+  </script>
+</body>
+</html>
